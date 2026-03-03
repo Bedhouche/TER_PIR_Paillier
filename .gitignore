@@ -1,4 +1,10 @@
-.ipynb_checkpoints/
-__pycache__/
+# Fichiers temporaires de SageMath et Python
 *.pyc
+__pycache__/
+*.sage.py
+*.ipynb_checkpoints/
 
+# Dossiers temporaires ou locaux
+local/
+*.swp
+.DS_Store

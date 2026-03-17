@@ -1,32 +1,27 @@
-import os
-
-# On récupère le dossier où se trouve le script main.sage
-os.chdir("/home/sage/project")
-
 load("src/paillier.sage")
-load("src/client.sage")
-load("src/server.sage")
+load("src/client3d.sage")
+load("src/server3d.sage")
 
-# ------------------------
-# Base de données
-# ------------------------
+# Configuration réelle
+# Hypercube 4x4x4 = 64 éléments
+ell = 4
+# On remplit avec des nombres de 32 bits pour simuler des vraies données
+database = [ZZ.random_element(2**31, 2**32) for _ in range(ell**3)]
 
-ell = 2
-database = [5, 9,
-            3, 7]
+# Choix secret
+k, i, j = 3, 1, 2
+expected = database[k*ell^2 + i*ell + j]
 
-client = PIRClient2D(bits=128)
-server = PIRServer2D(database, ell)
+print(f"--- TEST PIR 3D (Parameters: n=2048 bits, DB=64 elements) ---")
+client = PIRClient3D(bits=1024) 
+server = PIRServer3D(database, ell)
 
-# On veut l'élément (1,0) → valeur 3
-i_star = 1
-j_star = 0
+alpha, beta, gamma = client.generate_query(i, j, k, ell)
+response = server.answer_query(alpha, beta, gamma, client.crypto)
+result = client.decrypt_result(response)
 
-alpha, beta = client.generate_query(i_star, j_star, ell)
+print(f"Index cible: ({k},{i},{j}) | Valeur: {expected}")
+print(f"Résultat décrypté: {result}")
 
-encrypted_result = server.answer_query(alpha, beta, client.crypto)
-
-result = client.decrypt_result(encrypted_result)
-
-print("Élément demandé :", database[i_star*ell + j_star])
-print("Résultat PIR :", result)
+if result == expected:
+    print("✅ TEST RÉUSSI : Le protocole est robuste sur de grands entiers.")

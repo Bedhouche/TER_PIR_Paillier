@@ -2,9 +2,21 @@
 *.pyc
 __pycache__/
 *.sage.py
+*.sage.py.p
+*.py.p
 *.ipynb_checkpoints/
+*.py[cod]
+*$py.classs
+
+
+bin/
+micromamba
 
 # Dossiers temporaires ou locaux
 local/
 *.swp
 .DS_Store
+
+.vscode/
+.idea/
+*.swp

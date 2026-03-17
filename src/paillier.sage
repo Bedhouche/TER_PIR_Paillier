@@ -8,7 +8,7 @@ class Paillier:
     # =============================
     # KEY GENERATION
     # =============================
-    def __init__(self, bits=1024):
+    def __init__(self, bits=4):
 
         self.bits = bits
         self.keygen()

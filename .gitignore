@@ -8,6 +8,8 @@ __pycache__/
 *.py[cod]
 *$py.classs
 
+.ipynb_checkpoints/
+*.ipynb
 
 bin/
 micromamba

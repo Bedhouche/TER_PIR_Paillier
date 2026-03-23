@@ -13,25 +13,35 @@ class PIRServerND:
         dim = self.dim
         n = crypto.n
         n2 = crypto.n2
-        sigmas = sigma_computing(self,)
+        sigmas = sigma_computing(self,user_entry, n2 , [], dim,[])
         computed_answer = recursive_aux(self, user_entry, [], turn_remaining,n2)
 
-    def spliting (self, user_entry,filtered_splits,turn_remaining,n2)
-        if dim == 1:
-            return filtered_splits
+    def spliting (self,filtered_splits,n)
+        splits = []
+        for unsplit in filtered_splits:
+            splits.append( unsplit// n)
+            splits.append(unsplit % n)
+        return splits
         
     def filtering(self, relevant_user_entry, splits,n2 )
         UUUVVV = 1
-        for user_sent in relevant_user_entry :
-            UUUVVV = UUUVVV * power_mod(user_sent, ,n2)%n2
-        
-    def sigma_computing(self, relevant_user_entry, n2, sigmas, unfixed_dimension_nb,current_subdatabase_index)
+        filtered = []
+        for UUVV in splits:
+            for user_sent in relevant_user_entry :
+                UUUVVV = UUUVVV * power_mod(user_sent,UUVV ,n2)%n2
+            filtered.append(UUUVVV)
+            UUUVVV = 1
+        return filtered
+
+
+    def sigma_computing(self, user_entry, n2, sigmas, unfixed_dimension_nb,current_subdatabase_index)
         if unfixed_dimension_nb == 1
             sigma_i =1
             for i in range(dim):
-                sigma_i = sigma_i * power_mod(relevant_user_entry[current_subdatabase_index][i], self.nDimData[current_subdatabase_index],n2)%n2
+                sigma_i = sigma_i * power_mod(user_entry[0][i], ,n2)%n2
             sigmas.append(sigma_i)
         else :
             for i in range(dim):
-                sigma_computing(selt,relevant_user_entry, n2 ,sigmas, unfixed_dimension_nb-1 ,current_subdatabase_index + [i])
+                sigma_computing(self,user_entry, n2 ,sigmas, unfixed_dimension_nb-1 ,current_subdatabase_index + self.dim **(unfixed_dimension_nb-1))
         
+    def recursive_aux

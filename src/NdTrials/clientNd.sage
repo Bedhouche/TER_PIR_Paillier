@@ -15,6 +15,6 @@ class PIRClientND:
     def decrypt_result(self, response):
         n = self.crypto.n
         while (len(response) !=1):
-            response.append(self.crypto.decrypt(response[0])*n + self.crypto.decrypt)
+            response.append(self.crypto.decrypt(response[0])*n + self.crypto.decrypt(response[1]))
             response = response[2::]
-        return response
+        return self.crypto.decrypt(response[0])

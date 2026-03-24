@@ -14,7 +14,8 @@ class PIRServerND:
         dim = self.dim
         n = crypto.n
         n2 = crypto.n2
-        filtered = self.sigma_computing(user_entry, n2 , [], dim,0)
+        filtered = []
+        self.sigma_computing(user_entry, n2 , filtered, dim,0)
         user_entry= user_entry[1::]
         while (len(user_entry)!=0):
             splits = self.spliting(filtered,n)
@@ -44,7 +45,7 @@ class PIRServerND:
         if unfixed_dimension_nb == 1 :
             sigma_i =1
             for i in range(self.ell):
-                sigma_i = sigma_i * power_mod(user_entry[0][i],current_subdatabase_index + i,n2)%n2
+                sigma_i = sigma_i * power_mod(user_entry[0][i],self.nDimData[current_subdatabase_index + i],n2)%n2
             sigmas.append(sigma_i)
         else :
             for i in range(self.ell):

@@ -19,9 +19,10 @@ class Paillier:
         """
 
         # 1. Choisir p, q premiers distincts
-        self.p = random_prime(2**self.bits, lbound=2**(self.bits-1))
-        self.q = random_prime(2**self.bits, lbound=2**(self.bits-1))
-
+        # self.p = random_prime(2**self.bits, lbound=2**(self.bits-1))
+        # self.q = random_prime(2**self.bits, lbound=2**(self.bits-1))
+        self.p = 5
+        self.q = 3
         while self.p == self.q:
             self.q = random_prime(2**self.bits, lbound=2**(self.bits-1))
 
@@ -60,19 +61,19 @@ class Paillier:
             raise ValueError("m doit appartenir à Z_n")
 
         # r dans Z*_n
-        r = ZZ.random_element(1, self.n)
-        while gcd(r, self.n) != 1:
-            r = ZZ.random_element(1, self.n)
+        # r = ZZ.random_element(1, self.n)
+        # while gcd(r, self.n) != 1:
+        #     r = ZZ.random_element(1, self.n)
 
         # Optimisation : (n+1)^m mod n² = 1 + m*n
         gm = (1 + m * self.n) % self.n2
 
-        rn = power_mod(r, self.n, self.n2)
+        # rn = power_mod(r, self.n, self.n2)
 
-        c = (gm * rn) % self.n2
+        # c = (gm * rn) % self.n2
 
-        return c
-    
+        # return c
+        return gm
     # =============================
     # DECRYPTION
     # =============================

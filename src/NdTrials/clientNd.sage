@@ -7,9 +7,9 @@ class PIRClientND:
         self.crypto = Paillier(bits)
 
     def generate_query(self, star_list , ell):
-        user_query = [[0]*ell]*len[star_list]
+        user_query = [[self.crypto.encrypt(0)]for i in range(ell)]*len[star_list]
         for i in range(len(star_list)):
-            user_query[i][star_list[i]] = 1
+            user_query[i][star_list[i]] = self.crypto.encrypt(1)
         return user_query
 
     def decrypt_result(self, response):

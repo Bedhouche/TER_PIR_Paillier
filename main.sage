@@ -1,6 +1,9 @@
 load("src/paillier.sage")
 load("src/client3d.sage")
 load("src/server3d.sage")
+load("src/NdTrials/serverNd.sage")
+load("src/NdTrials/clientNd.sage")
+
 
 # Configuration réelle
 # Hypercube 4x4x4 = 64 éléments
@@ -15,13 +18,18 @@ expected = database[k*ell^2 + i*ell + j]
 print(f"--- TEST PIR 3D (Parameters: n=2048 bits, DB=64 elements) ---")
 client = PIRClient3D(bits=1024) 
 server = PIRServer3D(database, ell)
+clientNd = PIRClientND(bits=1024)
+serverNd = PIRServerND(database,3, ell)
 
 alpha, beta, gamma = client.generate_query(i, j, k, ell)
+
 response = server.answer_query(alpha, beta, gamma, client.crypto)
 result = client.decrypt_result(response)
+responseNd = serverNd.answer_query_Nd([alpha,beta,gamma],clientNd.crypto)
+resultNd = clientNd.decrypt_result(responseNd)
 
 print(f"Index cible: ({k},{i},{j}) | Valeur: {expected}")
 print(f"Résultat décrypté: {result}")
-
+print(f"Résultat en N-d décrypté: {resultNd}")
 if result == expected:
     print("✅ TEST RÉUSSI : Le protocole est robuste sur de grands entiers.")

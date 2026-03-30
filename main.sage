@@ -1,37 +1,27 @@
+# --- main.sage ---
 load("src/paillier.sage")
-load("src/client3d.sage")
-load("src/server3d.sage")
 load("src/NdTrials/serverNd.sage")
 load("src/NdTrials/clientNd.sage")
 
+dim = 4
+ell = 2
+size = ell^dim # 16 éléments
+database = [ZZ.random_element(1000) for _ in range(size)]
 
-# Configuration réelle
-# Hypercube 4x4x4 = 64 éléments
-ell = 4
-# On remplit avec des nombres de 32 bits pour simuler des vraies données
-# database = [ZZ.random_element(2**31, 2**32) for _ in range(ell**3)]
-testdata= [0,1,2,3]
+# Index cible (ex: 1, 0, 1, 1)
+target_coords = [1, 0, 1, 1]
+# Calcul de l'index à plat pour vérification
+expected_idx = sum(target_coords[i] * (ell^(dim-1-i)) for i in range(dim))
+expected_val = database[expected_idx]
 
-# Choix secret
-# k, i, j = 3, 1, 2
-testi,testj= 0,1
-# expected = database[k*ell^2 + i*ell + j]
+crypto = Paillier(bits=1024)
+client = PIRClientND(crypto)
+server = PIRServerND(database, dim, ell)
 
-print(f"--- TEST PIR 3D (Parameters: n=2048 bits, DB=64 elements) ---")
-# client = PIRClient3D(bits=1024) 
-# server = PIRServer3D(database, ell)
-clientNd = PIRClientND(bits=1024)
-serverNd = PIRServerND(testdata,2, 2)
+print(f"--- TEST PIR {dim}D ---")
+query = client.generate_query(target_coords, ell)
+response = server.answer_query(query, crypto)
+result = client.decrypt_result(response)
 
-# alpha, beta, gamma = client.generate_query(i, j, k, ell)
-
-# response = server.answer_query(alpha, beta, gamma, client.crypto)
-# result = client.decrypt_result(response)
-responseNd = serverNd.answer_query_Nd([[clientNd.crypto.encrypt(1),clientNd.crypto.encrypt(0)],[clientNd.crypto.encrypt(0),clientNd.crypto.encrypt(1)]],clientNd.crypto)
-resultNd = clientNd.decrypt_result(responseNd)
-
-# print(f"Index cible: ({k},{i},{j}) | Valeur: {expected}")
-# print(f"Résultat décrypté: {result}")
-print(f"Résultat en N-d décrypté: {resultNd}")
-# if result == expected:
-#     print("✅ TEST RÉUSSI : Le protocole est robuste sur de grands entiers.")
+print(f"Attendu: {expected_val} | Obtenu: {result}")
+print("Succès !" if result == expected_val else "Échec...")

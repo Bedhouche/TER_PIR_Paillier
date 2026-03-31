@@ -5,8 +5,8 @@ load("src/NdTrials/clientNd.sage")
 import random
 
 # --- CONFIGURATION 6D ---
-dim = 6
-ell = 2
+dim = 2
+ell = 35
 size = ell^dim  # 64 éléments
 
 # 1. Base de données avec des valeurs ALÉATOIRES (ex: entre 1000 et 9999)

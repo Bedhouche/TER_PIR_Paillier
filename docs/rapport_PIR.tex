@@ -1,0 +1,570 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{orange},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    breaklines=true,
+    frame=single
+}
+\geometry{margin=2.5cm}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric}
+
+\title{Travail d'Étude et de Recherche \\ \textbf{Implémentation d'un protocole PIR sur Hypercube ND via le cryptosystème de Paillier}}
+
+\date{2026}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+
+
+
+\chapter{Introduction}
+
+\section{Contexte : la protection de la vie privée}
+
+Avec l’essor des services numériques et du stockage externalisé des données, la protection de la vie privée est devenue un enjeu central en informatique. De nombreuses applications modernes nécessitent d’interroger des bases de données potentiellement sensibles, telles que des données médicales, financières ou personnelles. Dans ce contexte, il est essentiel de garantir non seulement la confidentialité des données stockées, mais également celle des requêtes effectuées par les utilisateurs.
+
+Autrement dit, lorsqu’un utilisateur interroge une base de données distante, il ne souhaite pas uniquement protéger le contenu de la réponse, mais aussi l’objet même de sa recherche. La divulgation de cette information peut en effet entraîner des atteintes significatives à la vie privée.
+
+Dans un modèle classique client-serveur, même si les communications sont chiffrées, le serveur connaît l’index de la donnée demandée. Cette information peut suffire à révéler des éléments sensibles sur l’utilisateur. En effet, les métadonnées d’accès permettent d’inférer des informations critiques telles que des pathologies ou des intérêts financiers. Par exemple, dans un système médical, connaître l’identifiant d’un dossier consulté peut révéler des informations confidentielles sur l’état de santé d’un patient.
+
+
+\section{Problématique : l’accès anonyme aux données}
+
+Le défi technologique peut se résumer ainsi : \textit{Comment un utilisateur peut-il récupérer un élément $x_i$ d'une base de données $X = \{x_0, x_1, \dots, x_{n-1}\}$ sans que le serveur ne puisse déterminer l'indice $i$ ?}
+
+Une solution naïve consisterait à télécharger l’intégralité de la base de données, garantissant ainsi que le serveur ne puisse pas distinguer l’élément recherché. Toutefois, cette approche devient rapidement impraticable lorsque la taille de la base de données augmente, en raison d’un coût de communication prohibitif.
+
+Il est donc nécessaire de concevoir des protocoles permettant de minimiser les échanges tout en préservant la confidentialité des requêtes.
+
+
+
+
+\section{Contribution : Le Private Information Retrieval (PIR)}
+Le \textit{Private Information Retrieval} (PIR) est une primitive cryptographique conçue pour répondre à cette problématique. Dans le cadre de ce TER, nous nous concentrons sur le PIR computationnel (cPIR), dont la sécurité repose sur la difficulté de problèmes mathématiques complexes, et plus particulièrement sur le cryptosystème de Paillier.
+
+L'originalité de ce travail réside dans le dépassement du modèle vectoriel classique (1D) au profit d'une structure d'hypercube multidimensionnelle. Cette approche permet de réduire la complexité de communication de $O(n)$ à $O(\sqrt[d]{n})$, où $d$ représente la dimension de l'hypercube, rendant le protocole particulièrement performant pour des bases de données volumineuses.
+
+\subsection{Approche et méthodologie : une progression incrémentale}
+Le protocole développé s'appuie sur la propriété d'homomorphisme additif du cryptosystème de Paillier, qui permet d'effectuer des calculs directement sur des données chiffrées. Notre étude suit une progression logique et pédagogique en quatre étapes majeures :
+
+\begin{enumerate}
+    \item \textbf{Le cas unidimensionnel (1D) :} Étude du modèle de base où la base de données est traitée comme un vecteur linéaire. Cette étape a permis de valider les fonctions fondamentales de chiffrement et de produit scalaire homomorphe.
+    \item \textbf{Le cas bidimensionnel (2D) :} Modélisation de la base sous forme de matrice ($\ell \times \ell$). Cette étape introduit la première réduction significative de la communication et la gestion de requêtes structurées par coordonnées.
+    \item \textbf{Le cas tridimensionnel (3D) :} Passage à une structure de cube ($\ell \times \ell \times \ell$). Cette phase est cruciale car elle impose l'implémentation du mécanisme de \textit{splitting} (décomposition des chiffrés intermédiaires) pour permettre une récursion profonde sans dépasser la capacité du modulo $n$.
+    \item \textbf{Généralisation à la dimension $N$ (ND) :} Synthèse des étapes précédentes pour aboutir à un algorithme capable de traiter une dimension $d$ arbitraire. Cette flexibilité permet d'optimiser le compromis entre le coût de communication (qui diminue avec l'augmentation de $d$) et la charge de calcul côté serveur.
+\end{enumerate}
+
+La contribution principale de ce travail est donc la conception, l'analyse et l'implémentation d'un protocole PIR robuste basé sur une structure hypercubique généralisée. L'ensemble du système a été développé avec l'outil de calcul formel \textbf{SageMath} et validé expérimentalement sur des paramètres de sécurité réels (clés de 2048 bits), démontrant une efficacité accrue sur des bases de données de grande taille.
+
+
+
+\chapter{Fondements Mathématiques}
+
+
+
+\section{Fondements Mathématiques}
+
+Cette section présente les bases cryptographiques nécessaires à la compréhension du protocole de \textit{Private Information Retrieval} (PIR) implémenté dans ce travail.  
+Nous nous appuyons sur le cryptosystème de Paillier \cite{paillier1999}, un schéma de chiffrement probabiliste à clé publique basé sur la difficulté de calculer les racines $n$-ièmes dans le groupe multiplicatif $\mathbb{Z}^*_{n^2}$. Ce système est particulièrement adapté au PIR grâce à ses propriétés homomorphiques. Cette propriété permet d’effectuer certaines opérations directement sur des données chiffrées, ce qui constitue l’élément clé permettant la construction de protocoles PIR.
+
+
+\subsection{Cryptosystème de Paillier}
+
+
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}[node distance=1.5cm, auto, >=Stealth]
+        
+        
+        \tikzstyle{box} = [draw, rectangle, rounded corners, inner sep=10pt, text width=4.5cm, align=left, fill=white]
+        \tikzstyle{actor} = [font=\bfseries\large]
+
+        
+        \draw[dashed, gray] (0,0) -- (0,-9);
+        \draw[dashed, gray] (8,0) -- (8,-9);
+
+        
+        \node[actor] at (0,0.5) { };
+        \node[actor] at (8,0.5) { };
+
+       
+        \node[box, fill=blue!5] (gen) at (0,-1.5) {
+            \textbf{1. Génération des clés}\\
+            - $p, q$ (premiers)\\
+            - $n = p \times q$\\
+            - $\lambda = \text{lcm}(p-1, q-1)$\\
+            - $g = n + 1$
+        };
+
+        
+        \draw[->, ultra thick, blue] (gen.east) -- node[above, black] {Clé Publique $(n, g)$} (8,-1.5);
+
+        
+        \node[box, fill=green!5] (enc) at (8,-4) {
+            \textbf{2. Chiffrement du message}\\
+            - Choisir $m \in \mathbb{Z}_n$\\
+            - $r \in \mathbb{Z}_n^*$ (aléatoire)\\
+            - $c = g^m \cdot r^n \pmod{n^2}$
+        };
+
+        
+        \draw[->, ultra thick, green!50!black] (enc.west) -- node[above, black] {Texte chiffré $(c)$} (0,-4);
+
+        
+        \node[box, fill=red!5] (dec) at (0,-5.5) {
+            \textbf{3. Déchiffrement}\\
+            - $u = c^\lambda \pmod{n^2}$\\
+            - $L(u) = \frac{u-1}{n}$\\
+            - $m = L(u) \cdot \lambda^{-1} \pmod n$
+        };
+
+        
+        \node[box, fill=orange!5, text width=10cm] (homo) at (4,-8) {
+            \textbf{Propriété Homomorphe (Base du PIR)}\\
+            Le serveur peut calculer $E(m_1 + m_2)$ en faisant $c_1 \times c_2$.\\
+            Il peut calculer $E(k \cdot m)$ en faisant $c^k$.
+        };
+
+    \end{tikzpicture}
+    \caption{ Fonctions du cryptosystème de Paillier}
+\end{figure}
+
+
+Le cryptosystème de Paillier a été proposé par Pascal Paillier en 1999.  
+Il repose sur la difficulté d’un problème mathématique appelé \textit{Composite Residuosity Problem}.
+
+Il s’agit d’un système de chiffrement probabiliste à clé publique, c’est-à-dire que :
+\begin{itemize}
+\item la clé publique permet de chiffrer les données,
+\item la clé privée permet de les déchiffrer.
+\end{itemize}
+
+Ce schéma possède une propriété particulièrement intéressante pour les protocoles de calcul sécurisé : l’homomorphisme additif.
+
+
+
+\subsection{Génération des clés : Construction de l'espace \texorpdfstring{$n^2$}{n^2}}
+
+La première étape du cryptosystème de Paillier consiste à générer une paire de
+clés composée d'une clé publique et d'une clé privée.  
+Cette phase est essentielle car elle détermine la sécurité du système.  
+Dans notre implémentation SageMath, cette procédure est réalisée dans la
+fonction \texttt{keygen()}.
+
+
+\begin{enumerate}
+    \item \textbf{Choix des premiers :} Sélectionner deux grands nombres premiers $p$ et $q$.
+    Ces nombres doivent être choisis aléatoirement et suffisamment grands afin de garantir
+la sécurité du système.
+    \item \textbf{Calcul du module :}
+     Cet entier définit la taille de notre alphabet de messages.\[
+n = pq
+\]
+
+ La sécurité du cryptosystème repose en grande partie sur la difficulté du problème de factorisation de $n$. Autrement dit, connaissant $n$, il est considéré comme difficile de retrouver les facteurs premiers $p$ et $q$.
+    \item \textbf{L'espace de travail :} On calcule $n^2$. C'est ici que le "mélange" a lieu. Contrairement au RSA (modulo $n$). Le cryptosystème de Paillier travaille dans le groupe multiplicatif :
+
+\[
+\mathbb{Z}_{n^2}^{*}
+\]
+
+c'est-à-dire l'ensemble des entiers inversibles modulo $n^2$.
+
+L'utilisation du module $n^2$ permet de construire une structure mathématique
+possédant des propriétés particulières nécessaires au chiffrement homomorphe.
+   
+    \item \textbf{Clé Privée ($\lambda$) :} 
+
+
+
+\[ \lambda = \mathrm{lcm}(p-1, q-1)\] 
+où $\mathrm{lcm}$ désigne le plus petit commun multiple (ppcm).
+
+
+Cette valeur correspond à la fonction de Carmichael appliquée à $n$.  
+Elle joue un rôle important dans le processus de déchiffrement.
+C'est l'exposant qui permet d'annuler la partie "résidu" du message sans toucher à la partie "message".
+    \item \textbf{Le Générateur $g$ :} On choisit ensuite un élément :
+
+\[
+g \in \mathbb{Z}_{n^2}^{*}
+\] 
+Ce paramètre est utilisé dans la fonction de chiffrement.
+
+
+Dans l'article original de Pascal Paillier \cite{paillier1999}, le générateur $g$ peut être n'importe quel entier tel que son ordre soit un multiple de $n$ dans $\mathbb{Z}^*_{n^2}$. Cependant, l'utilisation de la valeur spécifique $g = n+1$ est devenue le standard de facto dans la littérature et les implémentations modernes.
+
+\subsubsection{Justification mathématique}
+
+Le choix de $g = n+1$ repose sur le développement du binôme de Newton. Pour un message $m$ donné, l'expression $(n+1)^m$ peut s'écrire :
+
+\[
+(n+1)^m = \sum_{k=0}^{m} \binom{m}{k} n^k \cdot 1^{m-k} = \binom{m}{0}n^0 + \binom{m}{1}n^1 + \binom{m}{2}n^2 + \dots + \binom{m}{m}n^m
+\]
+
+En analysant cette somme dans l'espace de travail du cryptosystème, c'est-à-dire modulo $n^2$, nous observons que :
+\begin{itemize}
+    \item Le premier terme ($k=0$) est $\binom{m}{0}n^0 = 1$.
+    \item Le deuxième terme ($k=1$) est $\binom{m}{1}n^1 = mn$.
+    \item \textbf{Tous les termes suivants} ($k \geq 2$) possèdent un facteur $n^k$ qui est un multiple de $n^2$. Par conséquent, ils sont tous congrus à $0 \pmod{n^2}$.
+\end{itemize}
+
+Il en résulte la simplification fondamentale suivante :
+\begin{equation}
+    (n+1)^m \equiv 1 + mn \pmod{n^2}
+\end{equation}
+
+
+
+\subsubsection{Les avantages majeurs de cette optimisation}
+
+Ce choix technique offre trois bénéfices déterminants pour l'efficacité du protocole :
+
+\begin{enumerate}
+    \item \textbf{Efficacité algorithmique :} Au lieu d'effectuer une exponentiation modulaire complexe $g^m \pmod{n^2}$ (très coûteuse en ressources CPU), le chiffrement se réduit à une simple multiplication et une addition ($1 + mn$). Pour un serveur traitant une base de données PIR massive, ce gain de temps est crucial.
+    
+    \item \textbf{Simplification du déchiffrement :} Avec $g = n+1$, la constante de normalisation $\mu$ se simplifie mathématiquement pour devenir l'inverse modulaire de $\lambda$ :
+    \[ \mu = \lambda^{-1} \pmod n \]
+    Cela élimine une étape de calcul lourde lors de la phase de génération des clés et du déchiffrement pour l'utilisateur.
+
+    \item \textbf{Garantie structurelle :} Il est mathématiquement prouvé que $n+1$ possède un ordre égal à $n$ dans le groupe $\mathbb{Z}^*_{n^2}$. Cette propriété garantit que la fonction de chiffrement est une bijection, assurant ainsi qu'aucun message ne sera "perdu" ou ne provoquera de collision lors du déchiffrement.
+\end{enumerate}
+
+
+    \item \textbf{La constante de déchiffrement :} $\mu = \lambda^{-1} \pmod n$.
+
+    La propriété fondamentale utilisée est que pour tout élément $u$ appartenant à
+$\mathbb{Z}_{n^2}^{*}$ :
+
+\[
+u^{\lambda} \equiv 1 \pmod{n}
+\]
+Cette propriété permet de récupérer le message original lors du déchiffrement.
+
+
+On calcule ensuite la valeur :
+
+\[
+\mu = (L(g^{\lambda} \mod n^2))^{-1} \mod n
+\]
+
+où la fonction auxiliaire $L$ est définie par :
+
+\[
+L(u) = \frac{u-1}{n}
+\]
+
+Dans le cas particulier où $g = n + 1$, cette expression se simplifie et on
+obtient :
+
+\[
+\mu = \lambda^{-1} \mod n
+\]
+
+
+\subsubsection{Simplification du paramètre $\mu$}
+
+Le paramètre $\mu$ assure la cohérence du déchiffrement en inversant l'effet de l'exposant $\lambda$. Voici les étapes de son calcul avec $g = n+1$ :
+
+\begin{enumerate}
+    \item \textbf{Évaluation du générateur :} On calcule $u = g^\lambda \pmod{n^2}$. 
+    Grâce à la propriété $(n+1)^\lambda \equiv 1 + \lambda n \pmod{n^2}$, on trouve :
+    \[ u = 1 + \lambda n \]
+    \item \textbf{Extraction par la fonction $L$ :} On applique $L(u) = \frac{u-1}{n}$ :
+    \[ L(1 + \lambda n) = \frac{1 + \lambda n - 1}{n} = \lambda \]
+    \item \textbf{Inversion modulaire :} Par définition, $\mu$ est l'inverse de ce résultat modulo $n$ :
+    \[ \mu = \lambda^{-1} \pmod n \]
+\end{enumerate}
+
+Cette simplification montre que le choix de $g=n+1$ ne réduit pas seulement le coût du chiffrement, mais simplifie aussi la génération des clés et la phase de déchiffrement.
+
+Ce paramètre est utilisé dans la phase de déchiffrement pour retrouver le
+message original.
+
+\end{enumerate}
+
+
+
+\textbf{Clé Publique :} 
+
+
+\[
+(n, g)
+\]
+
+Elle est utilisée par n'importe quel utilisateur pour chiffrer un message.
+
+
+
+\textbf{Clé Privée :} 
+
+\[
+(\lambda, \mu)
+\]
+
+Elle doit rester secrète et permet de déchiffrer les messages.
+
+
+Dans notre implémentation SageMath, ces différentes étapes sont réalisées
+directement dans la fonction \texttt{keygen()}, qui génère aléatoirement les
+nombres premiers $p$ et $q$, puis calcule les paramètres nécessaires au
+fonctionnement du cryptosystème.
+
+\newpage
+\subsection{Mécanisme de Chiffrement}
+
+
+Le chiffrement de Paillier est dit \textbf{probabiliste}. Cela signifie qu'un même message $m$ possédera une multitude de représentations chiffrées différentes. Cette propriété est essentielle pour le PIR, car elle empêche le serveur de deviner quel index est demandé en comparant les requêtes.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=3cm]
+
+\node (m) [draw, rectangle] {Message $m \in \mathbb{Z}_n$};
+\node (r) [draw, rectangle, right of=m] {Aléa $r \in \mathbb{Z}_n^*$};
+
+\node (c) [draw, rectangle, below of=m, xshift=1.5cm] {$c = g^m r^n \mod n^2$};
+
+\draw[->] (m) -- (c);
+\draw[->] (r) -- (c);
+
+\end{tikzpicture}
+
+\caption{Processus de chiffrement dans le cryptosystème de Paillier}
+\end{figure}
+
+
+Une fois les clés générées, n'importe quel utilisateur disposant de la clé
+publique $(n,g)$.
+
+
+
+Pour chiffrer un message $m \in \mathbb{Z}_n$, le processus est le suivant :
+\begin{enumerate}
+    \item \textbf{Choix de l'aléa :} On sélectionne un entier aléatoire $r$ tel que $0 < r < n$ et $\text{gcd}(r, n) = 1$.
+
+    
+\[
+r \in \mathbb{Z}_n^*
+\]
+
+Ce paramètre joue un rôle essentiel dans la sécurité du système.
+
+En effet, même si deux utilisateurs chiffrent exactement le même message $m$,
+les valeurs obtenues seront différentes si les valeurs de $r$ sont différentes.
+
+Cela empêche un adversaire d'identifier un message uniquement en observant les
+chiffrés.
+    \item \textbf{Calcul du chiffré :} Le texte chiffré $c$ est calculé par :
+    \[ c = g^m \cdot r^n \pmod{n^2} \]
+
+
+Dans cette expression :
+
+\begin{itemize}
+
+\item $g^m$ contient l'information liée au message
+
+\item $r^n$ introduit l'aléa nécessaire pour masquer le message
+
+\end{itemize}
+
+    \item \textbf{Optimisation avec $g = n+1$ :} 
+
+    
+Dans le cas particulier où $g = n+1$, on utilise la simplification :
+
+\[
+g^m = (n+1)^m \equiv 1 + mn \pmod{n^2}
+\]
+
+Le chiffrement devient alors :
+
+\[
+c = (1 + mn) \cdot r^n \mod n^2
+\]
+
+Cette forme permet de réduire le coût de calcul du chiffrement.
+
+
+\end{enumerate}
+
+\paragraph{Pourquoi le terme $r^n$ ?} 
+Le terme $r^n$ appartient au groupe des \textit{résidus $n$-ièmes}. Son rôle est de masquer la structure de $1+mn$. Comme il existe $\phi(n)$ valeurs possibles pour $r$, il y a autant de façons de chiffrer le même message. Sans la clé privée, il est impossible de distinguer $E(m)$ d'un nombre totalement aléatoire dans $\mathbb{Z}_{n^2}^*$.
+
+
+
+\subsection{Mécanisme de Déchiffrement}
+
+Le déchiffrement consiste à extraire $m$ de $c = (1+mn)r^n \pmod{n^2}$. Il repose sur la propriété fondamentale de la fonction de Carmichael : l'élévation à la puissance $\lambda$ élimine la composante aléatoire.
+
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=2cm]
+
+\node (c) [draw, rectangle] {Chiffré $c$};
+
+\node (pow) [draw, rectangle, below of=c] {$c^\lambda \mod n^2$};
+
+\node (L) [draw, rectangle, below of=pow] {$L(u) = (u-1)/n$};
+
+\node (m) [draw, rectangle, below of=L] {Message $m$};
+
+\draw[->] (c) -- (pow);
+\draw[->] (pow) -- (L);
+\draw[->] (L) -- (m);
+
+\end{tikzpicture}
+
+\caption{Processus de déchiffrement}
+\end{figure}
+
+\begin{enumerate}
+    \item \textbf{Élimination du masque :} On calcule $u = c^\lambda \pmod{n^2}$.
+    \[ u = ((1+mn) \cdot r^n)^\lambda = (1+mn)^\lambda \cdot (r^n)^\lambda \pmod{n^2} \]
+    Or,D'après le théorème de \textbf{Euler/Carmichael}, pour tout $r \in \mathbb{Z}_n^*$, on a $r^{n\lambda} \equiv 1 \pmod{n^2}$. On obtient donc :
+    \[ u \equiv 1 + m\lambda n \pmod{n^2} \]
+    \item \textbf{Extraction du message :} On applique la fonction $L$ pour isoler la partie linéaire :
+    \[ L(u) = \frac{(1 + m\lambda n) - 1}{n} = m\lambda \pmod n \]
+    \item \textbf{Finalisation avec $\mu$ :} On multiplie par la constante de déchiffrement $\mu = \lambda^{-1}$ pour retrouver $m$ :
+    \[ m = (m\lambda) \cdot \lambda^{-1} \equiv m \pmod n \]
+\end{enumerate}
+
+
+
+\subsection{Propriétés Homomorphes}
+
+L'intérêt majeur du cryptosystème de Paillier pour le PIR réside dans ses propriétés d'homomorphisme additif. Elles permettent au serveur d'effectuer des calculs sur des données qu'il ne peut pas lire.
+
+\subsubsection{Addition Homomorphe (Produit des chiffrés)}
+
+
+Le produit de deux textes chiffrés correspond à la somme de leurs messages clairs respectifs :
+\[ E(m_1, r_1) \cdot E(m_2, r_2) = (g^{m_1}r_1^n) \cdot (g^{m_2}r_2^n) = g^{m_1+m_2}(r_1r_2)^n = E(m_1 + m_2 \pmod n) \]
+\textit{Application au PIR :} Le serveur peut additionner les résultats de plusieurs sélections.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=3cm]
+
+\node (m1) [draw, rectangle] {$E(m_1 , r_1)$};
+\node (m2) [draw, rectangle, right of=m1] {$E(m_2 , r_2)$};
+
+\node (res) [draw, rectangle, below of=m1, xshift=1.5cm] {$E((m_1+m_2), r)$};
+
+\draw[->] (m1) -- (res);
+\draw[->] (m2) -- (res);
+
+\end{tikzpicture}
+
+\caption{Homomorphisme additif du cryptosystème de Paillier}
+\end{figure}
+
+\subsubsection{Multiplication par un scalaire (Exponentiation)}
+
+
+L'élévation d'un texte chiffré à une puissance constante $k$ correspond à la multiplication du message clair par $k$ :
+\[ E(m, r)^k = (g^m r^n)^k = g^{mk}(r^k)^n = E(k \cdot m \pmod n) \]
+
+\textit{Application au PIR :} C'est la propriété la plus critique. Elle permet au serveur de multiplier un bit de sa base de données ($k$) par un élément de sélection chiffré ($E(m)$) envoyé par l'utilisateur.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Opération sur les chiffrés} & \textbf{Effet sur les clairs} \\ \hline
+$c_1 \cdot c_2 \pmod{n^2}$ & $m_1 + m_2 \pmod n$ \\ \hline
+$c^k \pmod{n^2}$ & $k \cdot m \pmod n$ \\ \hline
+\end{tabular}
+\caption{Résumé des propriétés homomorphes de Paillier}
+\end{table}
+
+\chapter{Construction du protocole PIR}
+
+Ce chapitre détaille la transition entre les propriétés mathématiques du cryptosystème de Paillier et leur application concrète pour la protection de la vie privée. Nous construisons progressivement le protocole, en partant d'une structure vectorielle simple (1D) pour aboutir à une généralisation en hypercube de dimension $N$.
+
+\section{Principe du Private Information Retrieval (PIR)}
+
+
+\subsection{Définition du problème}
+
+Considérons une base de données détenue par un serveur :
+
+\[
+X = (x_1, x_2, \dots , x_n)
+\]
+
+où chaque élément $x_i$ appartient à un ensemble de données.
+
+Un utilisateur souhaite récupérer un élément spécifique $x_{i^*}$ de cette base de données.
+
+Le problème central du \textit{Private Information Retrieval} est le suivant :
+
+\begin{quote}
+Comment un utilisateur peut-il récupérer l'élément $x_{i^*}$ sans révéler l'indice $i^*$ au serveur ?
+\end{quote}
+
+Dans un modèle classique, l'utilisateur envoie directement l'indice $i^*$ au serveur, ce qui permet au serveur de connaître exactement l'information demandée.
+
+Le protocole PIR vise à éviter cette fuite d'information en permettant au serveur de calculer une réponse sans connaître la position de l'élément recherché.
+
+
+\subsection{Modèle client-serveur}
+Le protocole PIR s'inscrit dans un modèle client-serveur composé de deux entités :
+\begin{itemize}
+    \item \textbf{L'utilisateur (Client) :} Il souhaite obtenir une information spécifique dans la base de données. 
+    Il possède la clé privée Paillier. 
+    \item \textbf{Le serveur :} Il détient la base de données $X = (x_1, x_2, \dots, x_n)$ en clair. Et effectue les calculs nécessaires pour répondre à la requête.
+\end{itemize}
+
+Le protocole se déroule en trois étapes principales :
+
+\begin{enumerate}
+
+\item Le client génère une requête chiffrée représentant l'indice souhaité.
+
+\item Le serveur effectue des calculs sur la base de données à l'aide des propriétés homomorphes du chiffrement.
+
+\item Le serveur renvoie une réponse chiffrée que le client peut déchiffrer pour obtenir la donnée souhaitée.
+
+\begin{center}
+Client $\rightarrow$ Requête chiffrée $\rightarrow$ Serveur  \\
+Serveur $\rightarrow$ Réponse chiffrée $\rightarrow$ Client
+\end{center}
+
+\end{enumerate}
+
+
+\subsection{Objectif de confidentialité}
+
+La propriété essentielle d'un protocole PIR est que le serveur ne doit pas être capable de déterminer l'indice $i^*$ recherché par l'utilisateur.
+
+Pour cela, la requête envoyée au serveur doit être construite de manière à ce que toutes les positions de la base de données soient traitées de manière indistinguable c'est-à-dire il ne peut pas savoir quel index est "activé" dans le vecteur de requête.
+
+Le cryptosystème de Paillier est particulièrement adapté à cette construction Puisque $E(0)$ et $E(1)$ sont indiscernables pour le serveur et grâce à sa propriété d'homomorphisme additif, qui permet au serveur d'effectuer des calculs directement sur des données chiffrées.
+
+
+\end{document}

@@ -1,5 +1,35 @@
 from sage.all import *
 
+
+def multi_exp(bases, exponents, mod):
+    """
+    Calcule le produit des (bases[i]^exponents[i]) % mod de façon optimisée.
+    Algorithme de multi-exponentiation simultanée (Straus/Shamir trick).
+    """
+    if not bases:
+        return 1
+    
+    # On s'assure que tout est au format Integer de Sage
+    exponents = [ZZ(e) for e in exponents]
+    
+    # On détermine le nombre de bits maximum parmi les exposants
+    max_exp = max(exponents)
+    if max_exp == 0:
+        return 1
+    bit_length = max_exp.bit_length()
+    
+    res = 1
+    # On parcourt les bits de gauche à droite
+    for i in range(bit_length - 1, -1, -1):
+        # Étape "Square" : on élève le résultat au carré une seule fois pour tout le monde
+        res = (res * res) % mod
+        
+        # Étape "Multiply" : on multiplie par la base si le bit i de l'exposant est à 1
+        for j in range(len(bases)):
+            if (exponents[j] >> i) & 1:
+                res = (res * bases[j]) % mod
+    return res
+
 class PIRServerND:
     def __init__(self, database, dim, ell):
         self.database = database
@@ -18,10 +48,11 @@ class PIRServerND:
         # Cas de base : Dimension 1 (La couche la plus proche des données claires)
         if depth == self.dim - 1:
             # On réduit la liste de clairs en un seul chiffré
-            res = 1
-            for j in range(len(current_db)):
-                res = (res * power_mod(query_vectors[depth][j], current_db[j], n2)) % n2
-            return [res]
+            # res = 1
+            # for j in range(len(current_db)):
+            #    res = (res * power_mod(query_vectors[depth][j], current_db[j], n2)) % n2
+            #return [res]
+            return [multi_exp(query_vectors[depth], current_db, n2)]
 
         # Cas récursif : Dimensions 2 à D
         # 1. On divise la base actuelle en 'ell' sous-blocs
@@ -44,11 +75,14 @@ class PIRServerND:
             v_clairs = [ZZ(sub_results[i][k]) % n for i in range(self.ell)]
             
             # B. Filtering (Combinaison homomorphe avec le vecteur de requête de l'étage actuel)
-            acc_u = 1
-            acc_v = 1
-            for j in range(self.ell):
-                acc_u = (acc_u * power_mod(query_vectors[depth][j], u_clairs[j], n2)) % n2
-                acc_v = (acc_v * power_mod(query_vectors[depth][j], v_clairs[j], n2)) % n2
+            # acc_u = 1
+            #acc_v = 1
+            #for j in range(self.ell):
+            #    acc_u = (acc_u * power_mod(query_vectors[depth][j], u_clairs[j], n2)) % n2
+            #    acc_v = (acc_v * power_mod(query_vectors[depth][j], v_clairs[j], n2)) % n2
+            
+            acc_u = multi_exp(query_vectors[depth], u_clairs, n2)
+            acc_v = multi_exp(query_vectors[depth], v_clairs, n2)
             
             final_layer.append(acc_u)
             final_layer.append(acc_v)

@@ -6,26 +6,12 @@
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{geometry}
-\usepackage{listings}
-\usepackage{xcolor}
-
-\lstset{
-    language=Python,
-    basicstyle=\ttfamily\small,
-    keywordstyle=\color{blue},
-    commentstyle=\color{green!60!black},
-    stringstyle=\color{orange},
-    numbers=left,
-    numberstyle=\tiny\color{gray},
-    breaklines=true,
-    frame=single
-}
 \geometry{margin=2.5cm}
 
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta, positioning, shapes.geometric}
 
-\title{Travail d'Étude et de Recherche \\ \textbf{Implémentation d'un protocole PIR sur Hypercube ND via le cryptosystème de Paillier}}
+\title{Travail d'Étude et de Recherche \\ \textbf{Implémentation d'un protocole PIR sur Hypercube 3D via le cryptosystème de Paillier}}
 
 \date{2026}
 
@@ -34,6 +20,8 @@
 \maketitle
 
 \tableofcontents
+
+
 
 
 
@@ -97,19 +85,19 @@ Nous nous appuyons sur le cryptosystème de Paillier \cite{paillier1999}, un sch
     \centering
     \begin{tikzpicture}[node distance=1.5cm, auto, >=Stealth]
         
-        
+        % Styles
         \tikzstyle{box} = [draw, rectangle, rounded corners, inner sep=10pt, text width=4.5cm, align=left, fill=white]
         \tikzstyle{actor} = [font=\bfseries\large]
 
-        
+        % Colonnes (Lignes de vie)
         \draw[dashed, gray] (0,0) -- (0,-9);
         \draw[dashed, gray] (8,0) -- (8,-9);
 
-        
+        % Titres des acteurs
         \node[actor] at (0,0.5) { };
         \node[actor] at (8,0.5) { };
 
-       
+        % --- ÉTAPE 1 : GÉNÉRATION ---
         \node[box, fill=blue!5] (gen) at (0,-1.5) {
             \textbf{1. Génération des clés}\\
             - $p, q$ (premiers)\\
@@ -118,10 +106,10 @@ Nous nous appuyons sur le cryptosystème de Paillier \cite{paillier1999}, un sch
             - $g = n + 1$
         };
 
-        
+        % --- ENVOI CLÉ PUBLIQUE ---
         \draw[->, ultra thick, blue] (gen.east) -- node[above, black] {Clé Publique $(n, g)$} (8,-1.5);
 
-        
+        % --- ÉTAPE 2 : CHIFFREMENT (BOB) ---
         \node[box, fill=green!5] (enc) at (8,-4) {
             \textbf{2. Chiffrement du message}\\
             - Choisir $m \in \mathbb{Z}_n$\\
@@ -129,10 +117,10 @@ Nous nous appuyons sur le cryptosystème de Paillier \cite{paillier1999}, un sch
             - $c = g^m \cdot r^n \pmod{n^2}$
         };
 
-        
+        % --- ENVOI MESSAGE CHIFFRÉ ---
         \draw[->, ultra thick, green!50!black] (enc.west) -- node[above, black] {Texte chiffré $(c)$} (0,-4);
 
-        
+        % --- ÉTAPE 3 : DÉCHIFFREMENT (ALICE) ---
         \node[box, fill=red!5] (dec) at (0,-5.5) {
             \textbf{3. Déchiffrement}\\
             - $u = c^\lambda \pmod{n^2}$\\
@@ -140,7 +128,7 @@ Nous nous appuyons sur le cryptosystème de Paillier \cite{paillier1999}, un sch
             - $m = L(u) \cdot \lambda^{-1} \pmod n$
         };
 
-        
+        % --- ÉTAPE 4 : PROPRIÉTÉ (OPTIONNEL POUR LE PIR) ---
         \node[box, fill=orange!5, text width=10cm] (homo) at (4,-8) {
             \textbf{Propriété Homomorphe (Base du PIR)}\\
             Le serveur peut calculer $E(m_1 + m_2)$ en faisant $c_1 \times c_2$.\\
@@ -165,7 +153,8 @@ Ce schéma possède une propriété particulièrement intéressante pour les pro
 
 
 
-\subsection{Génération des clés : Construction de l'espace \texorpdfstring{$n^2$}{n^2}}
+\subsection{Génération des clés : Construction de l'espace $n^2$}
+
 
 La première étape du cryptosystème de Paillier consiste à générer une paire de
 clés composée d'une clé publique et d'une clé privée.  
@@ -445,7 +434,7 @@ Le déchiffrement consiste à extraire $m$ de $c = (1+mn)r^n \pmod{n^2}$. Il rep
 \begin{enumerate}
     \item \textbf{Élimination du masque :} On calcule $u = c^\lambda \pmod{n^2}$.
     \[ u = ((1+mn) \cdot r^n)^\lambda = (1+mn)^\lambda \cdot (r^n)^\lambda \pmod{n^2} \]
-    Or,D'après le théorème de \textbf{Euler/Carmichael}, pour tout $r \in \mathbb{Z}_n^*$, on a $r^{n\lambda} \equiv 1 \pmod{n^2}$. On obtient donc :
+    Or, d'après le théorème de Carmichael, pour tout $r \in \mathbb{Z}_n^*$, on a $r^{n\lambda} \equiv 1 \pmod{n^2}$. De plus, $(1+mn)^\lambda \equiv 1 + m\lambda n \pmod{n^2}$. On obtient donc :
     \[ u \equiv 1 + m\lambda n \pmod{n^2} \]
     \item \textbf{Extraction du message :} On applique la fonction $L$ pour isoler la partie linéaire :
     \[ L(u) = \frac{(1 + m\lambda n) - 1}{n} = m\lambda \pmod n \]
@@ -566,5 +555,369 @@ Pour cela, la requête envoyée au serveur doit être construite de manière à 
 
 Le cryptosystème de Paillier est particulièrement adapté à cette construction Puisque $E(0)$ et $E(1)$ sont indiscernables pour le serveur et grâce à sa propriété d'homomorphisme additif, qui permet au serveur d'effectuer des calculs directement sur des données chiffrées.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{PIR sur une base vectorielle (1D)}
+
+\subsection{Modélisation de la base de données}
+Dans le cas le plus simple, la base de données est représentée sous la forme d'un vecteur :
+\[ X = (x_1, x_2, \dots, x_n) \]
+où chaque élément $x_i$ correspond à une entrée de la base. L'utilisateur souhaite récupérer l'élément $x_{i^*}$ sans révéler l'indice $i^*$ au serveur.
+
+\subsection{Construction de la requête}
+Le client construit un vecteur indicateur chiffré $\alpha = (\alpha_1, \alpha_2, \dots, \alpha_n)$ tel que :
+\[
+\alpha_i =
+\begin{cases}
+E(1) & \text{si } i = i^* \\
+E(0) & \text{sinon}
+\end{cases}
+\]
+où $E(\cdot)$ est la fonction de chiffrement de Paillier. Ce vecteur est envoyé au serveur.
+
+\subsection{Calcul effectué par le serveur et Démonstration de Correction}
+Le serveur calcule le produit des puissances suivant :
+\[ R = \prod_{i=1}^{n} \alpha_i^{x_i} \pmod{n^2} \]
+
+\subsubsection{Démonstration mathématique}
+Pour comprendre pourquoi $R$ correspond au chiffrement de la donnée souhaitée, nous utilisons les deux propriétés homomorphes fondamentales du cryptosystème de Paillier :
+
+\begin{enumerate}
+    \item \textbf{Homomorphisme additif :} Le produit de deux chiffrés correspond à l'addition des clairs : 
+    \[ E(m_1) \cdot E(m_2) = E(m_1 + m_2) \pmod{n^2} \]
+    \item \textbf{Multiplication par un scalaire :} Un chiffré élevé à une puissance $k$ correspond à la multiplication du clair par ce scalaire : 
+    \[ E(m)^k = E(m \cdot k) \pmod{n^2} \]
+\end{enumerate}
+
+En appliquant ces propriétés au calcul du serveur :
+\[ R = \alpha_1^{x_1} \cdot \alpha_2^{x_2} \cdot \dots \cdot \alpha_n^{x_n} \]
+\[ R = E(m_1)^{x_1} \cdot E(m_2)^{x_2} \cdot \dots \cdot E(m_n)^{x_n} \]
+\[ R = E(m_1 \cdot x_1) \cdot E(m_2 \cdot x_2) \cdot \dots \cdot E(m_n \cdot x_n) \]
+\[ R = E(m_1 x_1 + m_2 x_2 + \dots + m_n x_n) = E\left( \sum_{i=1}^{n} m_i x_i \right) \]
+
+Par construction, $m_i = 1$ si $i = i^*$ et $m_i = 0$ sinon. La somme devient donc :
+\[ \sum_{i=1}^{n} m_i x_i = (0 \cdot x_1) + \dots + (1 \cdot x_{i^*}) + \dots + (0 \cdot x_n) = x_{i^*} \]
+Ainsi, nous avons bien démontré que : \textbf{$R = E(x_{i^*})$}.
+
+\subsection{Reconstruction de la réponse par le client}
+
+Une fois le chiffré $R$ reçu, le client utilise sa clé privée $(L, \mu)$ pour retrouver la valeur $x_{i^*}$.
+
+\subsubsection{Démonstration du déchiffrement}
+Le déchiffrement de Paillier repose sur la structure du groupe multiplicatif $\mathbb{Z}_{n^2}^*$. Pour un chiffré $R = E(m, r) = g^m \cdot r^n \pmod{n^2}$.
+
+
+
+Pour comprendre pourquoi $D(R)$ redonne exactement $x_{i^*}$, analysons la structure du chiffré produit par le serveur. Le résultat $R$ est de la forme :
+\[ R = g^{x_{i^*}} \cdot r^n \pmod{n^2} \]
+
+Le processus de déchiffrement suit trois étapes mathématiques :
+
+\begin{enumerate}
+    \item \textbf{Élimination de l'aléa :} En élevant $R$ à la puissance $\lambda$ (clé privée), le terme lié à l'aléa $r$ s'annule modulo $n^2$ car $(r^n)^\lambda \equiv 1 \pmod{n^2}$ d'après le théorème de Carmichael. On obtient :
+    \[ R^\lambda \equiv (g^\lambda)^{x_{i^*}} \pmod{n^2} \]
+    
+    \item \textbf{Linéarisation par le binôme de Newton :} En utilisant la base $g = 1+n$, nous pouvons simplifier l'expression. En effet, pour tout $k$, $(1+n)^k \equiv 1 + kn \pmod{n^2}$. L'expression devient :
+    \[ R^\lambda \equiv (1+n)^{x_{i^*}\lambda} \equiv 1 + x_{i^*} \lambda n \pmod{n^2} \]
+    
+    \item \textbf{Extraction du clair :} La fonction $L(u) = \frac{u-1}{n}$ permet de passer de la forme exponentielle à une forme linéaire simple. Le client calcule :
+    \[ L(R^\lambda) = \frac{1 + x_{i^*} \lambda n - 1}{n} = x_{i^*} \lambda \pmod{n} \]
+    En multipliant ce résultat par l'inverse modulaire $\mu = \lambda^{-1} \pmod{n}$, le client retrouve exactement :
+    \[ x_{i^*} = (x_{i^*} \lambda) \cdot \mu \equiv x_{i^*} \pmod{n} \]
+\end{enumerate}
+
+Cette démonstration prouve que tant que la valeur $x_{i^*}$ est inférieure à $n$, la reconstruction est parfaite et sans perte d'information.
+
+
+\subsection{Sécurité du protocole}
+La sécurité de ce schéma repose sur la protection de l'indice $i^*$.
+
+\subsubsection{Confidentialité de l'utilisateur (Vie privée)}
+Le serveur reçoit le vecteur $\alpha$. Pour compromettre la vie privée de l'utilisateur, le serveur doit être capable de distinguer quelle composante contient $E(1)$ parmi toutes celles contenant $E(0)$. 
+La sécurité repose sur l'hypothèse de la \textbf{Résiduosité Composite de Décidabilité (DCR)}. Paillier est un système \textbf{probabiliste} : le chiffrement d'un même message produit des chiffrés différents à chaque fois grâce à un aléa $r$. 
+Sans la clé privée, le serveur ne peut pas distinguer $E(0)$ de $E(1)$. Mathématiquement, les distributions de $E(0)$ et $E(1)$ sont computationnellement indistinguables. Le serveur ne voit donc qu'une suite de nombres aléatoires.
+
+\subsubsection{Confidentialité des données}
+Le client ne reçoit que $E(x_{i^*})$. Après déchiffrement, il n'obtient que la valeur demandée. Cependant, dans ce protocole de base (1D), le client ne possède pas de preuve formelle qu'il n'a pas reçu d'autres informations, mais comme il est l'émetteur de la requête, il ne peut récupérer qu'une combinaison linéaire des éléments qu'il a lui-même "activés" avec son vecteur $\alpha$.
+
+
+\subsubsection{Analyse de l'efficacité et limites du modèle 1D}
+
+Le protocole PIR vectoriel (1D) est conceptuellement puissant car il garantit une sécurité parfaite de l'indice (Information-Theoretic Privacy côté serveur), mais il souffre d'une inefficacité de communication.
+
+\subsubsection{Complexité de communication}
+Soit $|c|$ la taille d'un chiffré Paillier (typiquement 2048 bits pour une clé de 1024 bits).
+\begin{itemize}
+    \item \textbf{Communication montante (Client $\to$ Serveur) :} Le client envoie $n$ chiffrés. La taille est $n \cdot |c|$.
+    \item \textbf{Communication descendante (Serveur $\to$ Client) :} Le serveur renvoie $1$ chiffré. La taille est $1 \cdot |c|$.
+\end{itemize}
+
+Le coût total de communication est donc :
+\[ \mathcal{C}_{total} = (n + 1) \cdot |c| \implies O(n) \]
+
+
+
+\subsubsection{Le problème du passage à l'échelle}
+Pour une base de données contenant $n = 10^6$ éléments (1 million d'entrées), avec des chiffrés de 256 octets (2048 bits) :
+\[ \text{Taille de la requête} \approx 10^6 \times 256 \text{ octets} \approx 256 \text{ Mo} \]
+Envoyer 256 Mo de données pour récupérer un simple entier est impraticable. C'est ce constat qui motive le passage au \textbf{PIR multidimensionnel}, où la base de données est vue comme un hypercube, permettant de réduire la taille de la requête à $O(d \cdot n^{1/d})$.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{PIR Bidimensionnel (2D) avec mécanisme de Splitting}
+
+\subsection{Représentation matricielle de la base}
+Afin de réduire le coût de communication, la base de données n'est plus traitée comme un long vecteur, mais comme une matrice carrée $\ell \times \ell$ :
+\[
+X =
+\begin{pmatrix}
+x_{1,1} & x_{1,2} & \dots & x_{1,\ell} \\
+x_{2,1} & x_{2,2} & \dots & x_{2,\ell} \\
+\vdots & \vdots & \ddots & \vdots \\
+x_{\ell,1} & x_{\ell,2} & \dots & x_{\ell,\ell}
+\end{pmatrix}
+\]
+L'indice global $k$ d'un élément est alors décomposé en coordonnées $(i^*, j^*)$ telles que $n = \ell^2$. Typiquement, on choisit $\ell = \sqrt{n}$.
+
+\subsection{Principe de la récursion et problématique}
+En dimension 1, le serveur renvoie $E(x_{i^*})$. En dimension 2, l'idée est que le serveur ne renvoie pas directement le résultat, mais utilise le résultat de la première dimension comme un "nouveau message" pour une seconde réduction. 
+
+Cependant, un chiffré Paillier $\sigma_i$ appartient à $\mathbb{Z}_{n^2}$. Or, pour multiplier homomorpheusement un chiffré $\alpha_i$ par un message, ce message doit être un exposant, donc appartenir à $\mathbb{Z}_n$. Le mécanisme de \textbf{Splitting} est la solution technique pour traiter un chiffré comme un message clair.
+
+\subsection{Démonstration du calcul du serveur}
+
+\subsubsection{Phase 1 : Extraction du vecteur intermédiaire}
+Le serveur calcule pour chaque ligne $i \in \{0, \dots, \ell-1\}$ :
+\[ \sigma_i = \prod_{j=0}^{\ell-1} \beta_j^{x_{i,j}} \pmod{n^2} \]
+\textbf{Démonstration :} En utilisant la propriété $E(m)^x = E(mx)$, on a :
+\[ \sigma_i = \prod_{j=0}^{\ell-1} E(\beta_j \cdot x_{i,j}) = E\left( \sum_{j=0}^{\ell-1} \beta_j x_{i,j} \right) \]
+Comme $\beta_j=1$ uniquement pour $j=j^*$, on obtient $\ell$ chiffrés intermédiaires :
+\[ \sigma_i = E(x_{i, j^*}) \in \mathbb{Z}_{n^2} \]
+
+\subsubsection{Phase 2 : Le Splitting (Décomposition euclidienne)}
+Le serveur ne peut pas calculer $\alpha_i^{\sigma_i}$ car $\sigma_i$ est trop grand (module $n^2$). Il décompose alors chaque $\sigma_i$ en utilisant la division euclidienne par $n$ :
+\[ \sigma_i = q_i \cdot n + r_i \quad \text{avec } q_i, r_i < n \]
+Cette étape est purement arithmétique. Bien que $\sigma_i$ soit un chiffré, le serveur le traite ici comme un nombre entier brut (donnée publique).
+
+\subsubsection{Phase 3 : Réduction finale par recomposition homomorphe}
+Le serveur calcule deux valeurs de retour $U$ et $V$ en utilisant le vecteur ligne $\alpha$ envoyé par le client :
+\[ U = \prod_{i=0}^{\ell-1} \alpha_i^{q_i} \pmod{n^2} \quad \text{et} \quad V = \prod_{i=0}^{\ell-1} \alpha_i^{r_i} \pmod{n^2} \]
+En utilisant l'homomorphisme de Paillier, on démontre que :
+\[ U = E\left( \sum_{i=0}^{\ell-1} \alpha_i q_i \right) = E(q_{i^*}) \quad \text{et} \quad V = E\left( \sum_{i=0}^{\ell-1} \alpha_i r_i \right) = E(r_{i^*}) \]
+
+\subsection{Démonstration de la reconstruction côté Client}
+
+Le client reçoit le couple $(U, V)$. Sa procédure de reconstruction est le miroir exact du splitting du serveur.
+
+\subsubsection{Étape A : Premier niveau de déchiffrement}
+Le client déchiffre $U$ et $V$ avec sa clé privée pour obtenir les clairs $q_{i^*}$ et $r_{i^*}$ :
+\[ m_u = D(U) = q_{i^*} \quad ; \quad m_v = D(V) = r_{i^*} \]
+
+\subsubsection{Étape B : Recomposition du chiffré intermédiaire}
+Le client possède maintenant les deux morceaux du chiffré $\sigma_{i^*}$ qui avait été calculé à l'étape 1 par le serveur. Il le reconstruit par :
+\[ \tilde{\sigma} = m_u \cdot n + m_v = q_{i^*} \cdot n + r_{i^*} \]
+\textbf{Propriété :} Par définition du splitting, $\tilde{\sigma} = \sigma_{i^*}$. Or, nous avons démontré à la Phase 1 que $\sigma_{i^*} = E(x_{i^*, j^*})$.
+
+\subsubsection{Étape C : Déchiffrement final}
+Le client effectue un second déchiffrement sur la valeur reconstruite :
+\[ \text{Résultat} = D(\tilde{\sigma}) = D(E(x_{i^*, j^*})) = x_{i^*, j^*} \]
+
+\subsection{Analyse de la sécurité du Splitting}
+Une question légitime est : \textit{"Le fait que le serveur voit $\sigma_i$ et le divise par $n$ ne compromet-il pas la donnée ?"}.
+\begin{itemize}
+    \item \textbf{Côté Client :} L'indice $j^*$ est protégé dans $\beta$ et $i^*$ dans $\alpha$ par la sécurité IND-CPA de Paillier.
+    \item \textbf{Côté Serveur :} Le serveur manipule $\sigma_i$, qui est un texte chiffré. Dans le cryptosystème de Paillier, un chiffré est indistinguable d'un élément aléatoire de $\mathbb{Z}_{n^2}^*$. Effectuer des opérations arithmétiques ($// n$ et $\% n$) sur un bloc de données chiffrées sans posséder la clé privée ne donne aucune information sur le message clair $x_{i,j}$ contenu à l'intérieur. La structure algébrique est préservée, mais l'information reste scellée.
+\end{itemize}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{PIR sur un hypercube tridimensionnel (3D)}
+
+\subsection{Modélisation de la base en cube}
+La base de données est désormais structurée comme un cube de côté $\ell$, où $n = \ell^3$. Chaque élément est indexé par un triplet $(d, i, j)$ correspondant respectivement à la tranche (profondeur), la ligne et la colonne :
+\[ \mathcal{B} = \{x_{d,i,j} \mid 0 \le d,i,j < \ell\} \]
+
+\subsection{Vecteurs de requête (Requête tridimensionnelle)}
+Le client génère trois vecteurs indicateurs chiffrés pour cibler l'élément $x_{d^*, i^*, j^*}$ :
+\begin{itemize}
+    \item $\gamma = (E(\gamma_0), \dots, E(\gamma_{\ell-1}))$ pour la tranche $d^*$.
+    \item $\alpha = (E(\alpha_0), \dots, E(\alpha_{\ell-1}))$ pour la ligne $i^*$.
+    \item $\beta = (E(\beta_0), \dots, E(\beta_{\ell-1}))$ pour la colonne $j^*$.
+\end{itemize}
+
+\subsection{Calcul effectué par le serveur : La double récursion}
+Le serveur traite la base couche par couche en appliquant le principe du splitting à chaque étage.
+
+\subsubsection{Étape 1 : Réduction des plans (PIR 2D interne)}
+Pour chaque tranche $d$, le serveur calcule un résultat PIR 2D. Il obtient d'abord un chiffré intermédiaire par ligne :
+\[ val_{d,i} = \prod_{j=0}^{\ell-1} \beta_j^{x_{d,i,j}} \pmod{n^2} = E(x_{d,i,j^*}) \]
+Puis, il réduit les lignes pour obtenir deux chiffrés $u_d$ et $v_d$ (Splitting de niveau 1) :
+\[ u_d = \prod_{i=0}^{\ell-1} \alpha_i^{\lfloor val_{d,i} / n \rfloor} \quad ; \quad v_d = \prod_{i=0}^{\ell-1} \alpha_i^{val_{d,i} \pmod n} \]
+
+\subsubsection{Étape 2 : Splitting de niveau 2}
+À ce stade, pour chaque tranche $d$, le serveur possède deux chiffrés $u_d$ et $v_d$. Pour les combiner avec le dernier vecteur $\gamma$, il doit à nouveau les traiter comme des messages clairs. Il décompose chaque valeur :
+\[ u_d = uud_d \cdot n + uvd_d \quad ; \quad v_d = vud_d \cdot n + vvd_d \]
+Cela génère 4 scalaires clairs par tranche.
+
+\subsubsection{Étape 3 : Agrégation finale}
+Le serveur combine ces 4 scalaires avec le vecteur $\gamma$ pour produire la réponse finale composée de 4 chiffrés :
+\[ UU = \prod \gamma_d^{uud_d}, \quad UV = \prod \gamma_d^{uvd_d}, \quad VU = \prod \gamma_d^{vud_d}, \quad VV = \prod \gamma_d^{vvd_d} \]
+
+\subsection{Démonstration de la reconstruction : "Peler l'oignon"}
+La reconstruction par le client est récursive et suit l'ordre inverse du serveur (méthode LIFO) :
+
+\begin{enumerate}
+    \item \textbf{Retrait de la couche $\gamma$ :} Le client déchiffre $UU, UV, VU, VV$ pour obtenir les scalaires $uud_{d^*}, uvd_{d^*}, vud_{d^*}, vvd_{d^*}$.
+    \item \textbf{Recomposition du niveau intermédiaire :} Il reconstruit les chiffrés $u_{d^*}$ et $v_{d^*}$ :
+    \[ u_{d^*} = uud_{d^*} \cdot n + uvd_{d^*} \quad ; \quad v_{d^*} = vud_{d^*} \cdot n + vvd_{d^*} \]
+    \item \textbf{Retrait de la couche $\alpha/\beta$ :} Il déchiffre $u_{d^*}$ et $v_{d^*}$ pour obtenir $q_{i^*}$ et $r_{i^*}$ (quotient et reste du chiffré de la base).
+    \item \textbf{Recomposition et finalisation :} Il calcule $\sigma^* = q_{i^*} \cdot n + r_{i^*}$ et déchiffre une dernière fois pour obtenir la donnée brute $x_{d^*, i^*, j^*}$.
+\end{enumerate}
+
+\subsection{Analyse du coût et de la sécurité}
+\textbf{Communication :} Le coût descend à $O(\sqrt[3]{n})$. Pour $n=4096$, on envoie $3 \times 16 = 48$ chiffrés au lieu de $4096$ en 1D. Cependant, la réponse du serveur passe de 1 à 4 chiffrés ($2^{d-1}$ pour la dimension $d$).
+
+\textbf{Sécurité :} La sécurité est maintenue car chaque opération de splitting s'effectue sur des textes chiffrés dont la valeur numérique est aléatoire pour le serveur. La "profondeur" de la récursion n'affaiblit pas le chiffrement de Paillier.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Généralisation à une dimension arbitraire ($N$D)}
+
+\subsection{Représentation de la base en hypercube}
+De manière générale, une base de données contenant $n$ éléments peut être modélisée comme un hypercube de dimension $d$. Si l'on choisit une longueur de côté $\ell$ identique pour chaque dimension, nous avons la relation :
+\[ n = \ell^d \implies \ell = n^{1/d} \]
+Chaque élément de la base est alors indexé par un vecteur de coordonnées $(i_1, i_2, \dots, i_d)$, où chaque $i_j \in \{0, \dots, \ell-1\}$.
+
+\subsection{Algorithme de réduction récursive}
+Le protocole implémenté dans notre serveur (\texttt{PIRServerND}) repose sur une réduction récursive de la base, traitant les dimensions de la plus profonde ($d$) à la plus haute ($1$).
+
+\subsubsection{Cas de base (Dimension finale)}
+Lorsque la récursion atteint la dernière dimension (\texttt{depth == dim - 1}), le serveur traite des données claires. Il effectue un produit scalaire homomorphe entre le vecteur de requête et les éléments de la base :
+\[ res = \prod_{j=0}^{\ell-1} \text{query\_vectors}[depth][j]^{x_j} \pmod{n^2} \]
+Le résultat est un unique chiffré Paillier représentant l'élément sélectionné dans cette sous-section.
+
+\subsubsection{Étape récursive et mécanisme de Splitting}
+Pour les dimensions supérieures, le serveur reçoit une liste de chiffrés issus des appels récursifs précédents. Pour pouvoir appliquer le vecteur de requête actuel sans augmenter le degré du chiffrement (ce qui empêcherait le déchiffrement final), nous appliquons le \textbf{Splitting de Chang} :
+\begin{enumerate}
+    \item Chaque chiffré intermédiaire est décomposé en deux scalaires : $u = \text{chiffré} // n$ et $v = \text{chiffré} \pmod n$.
+    \item Ces scalaires sont utilisés comme exposants clairs avec le vecteur de requête de l'étage actuel.
+    \item À chaque niveau de dimension supplémentaire, le nombre de chiffrés en sortie est multiplié par 2. Pour une dimension $d$, le serveur renvoie une liste de $2^{d-1}$ chiffrés.
+\end{enumerate}
+
+\subsection{Reconstruction récursive par le client}
+Le client (\texttt{PIRClientND}) effectue l'opération inverse ("Peler l'oignon"). La méthode \texttt{\_recursive\_decrypt} traite la liste de réponse :
+\begin{enumerate}
+    \item Elle déchiffre les paires de valeurs $(u, v)$ pour retrouver les messages clairs.
+    \item Elle recompose le chiffré de l'étage inférieur par la formule : $m_{recomposed} = (u \cdot n + v)$.
+    \item Elle répète l'opération jusqu'à ce qu'il ne reste qu'une seule valeur, qui est le contenu original de la base de données.
+\end{enumerate}
+
+\subsection{Analyse de la complexité et compromis}
+
+\subsubsection{Coût de communication}
+Le coût total de communication (Upload) est la somme des tailles des vecteurs de requête pour chaque dimension :
+\[ \mathcal{C}_{upload} = d \cdot \ell \cdot |c| = d \cdot n^{1/d} \cdot |c| \implies O(d \cdot n^{1/d}) \]
+L'augmentation de la dimension $d$ réduit de façon exponentielle la taille de la requête (par exemple, pour $n=10^6$, passer de $d=1$ à $d=2$ réduit la requête d'un facteur 500).
+
+\subsubsection{Coût de calcul (Serveur)}
+Le serveur doit parcourir l'intégralité de l'hypercube. Bien que le nombre d'exponentiations reste proportionnel à $n$, le nombre de paliers de récursion et de divisions euclidiennes (splitting) augmente avec $d$. Il existe donc un \textbf{optimum théorique} (souvent autour de $d=2$ ou $d=3$ pour des bases moyennes) où le gain en communication compense le surcoût de calcul et l'augmentation de la taille de la réponse ($2^{d-1}$ chiffrés).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Analyse des performances expérimentales}
+
+\subsection{Cadre expérimental}
+Afin de valider les modèles théoriques de notre implémentation PIR récursive, nous avons mené une série de tests pratiques en utilisant SageMath. Les paramètres fixés pour cette expérience sont les suivants :
+\begin{itemize}
+    \item \textbf{Taille de la base de données ($n$)} : 4096 éléments.
+    \item \textbf{Niveau de sécurité} : Algorithme de Paillier avec des clés de 1024 bits (générant des chiffrés de 2048 bits).
+    \item \textbf{Dimensions testées ($d$)} : 1, 2, 3, 4, 6 et 12.
+\end{itemize}
+
+L'objectif est d'observer le compromis (trade-off) fondamental entre le coût de communication (taille de la requête) et le coût de calcul (temps de traitement serveur et client).
+
+\subsection{Résultats obtenus}
+
+Le tableau \ref{tab:pir_results} résume les statistiques d'exécution pour chaque dimension testée.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+\textbf{Dim. ($d$)} & \textbf{Param. $\ell$} & \textbf{Taille Req.} & \textbf{Génér. Client} & \textbf{Temps Serveur} & \textbf{Déchiff. Client} & \textbf{Temps Total} \\ \hline
+1D & 4096 & 1024.00 Ko & 103.63 s & 0.74 s & 0.02 s & 104.40 s \\ \hline
+\textbf{2D} & \textbf{64} & \textbf{32.00 Ko} & \textbf{3.76 s} & \textbf{3.90 s} & \textbf{0.09 s} & \textbf{7.76 s} \\ \hline
+3D & 16 & 12.00 Ko & 1.08 s & 14.01 s & 0.15 s & 15.24 s \\ \hline
+4D & 8 & 8.00 Ko & 0.78 s & 32.51 s & 0.35 s & 33.66 s \\ \hline
+6D & 4 & 6.00 Ko & 0.70 s & 114.97 s & 1.42 s & 117.10 s \\ \hline
+12D & 2 & 6.00 Ko & 3.55 s & 1309.51 s & 137.59 s & 1450.66 s \\ \hline
+\end{tabular}
+\caption{Comparaison des performances du protocole PIR selon la dimension ($n=4096$)}
+\label{tab:pir_results}
+\end{table}
+
+\subsection{Interprétation et mise en évidence du compromis}
+
+L'analyse de ces données met en évidence trois phénomènes distincts qui corroborent la théorie de l'algorithme de Chang :
+
+\subsubsection{Le goulot d'étranglement de la 1D : La surcharge côté client}
+En dimension 1, le serveur est extrêmement rapide ($0.74$ s) car il ne fait qu'une simple combinaison linéaire homomorphe. Cependant, le temps d'exécution total ($104.40$ s) est ruiné par le client qui doit générer $n=4096$ chiffrés. La requête atteint $1$ Mo. Dans un scénario réel sur réseau distant, ce coût de communication rendrait le système inutilisable.
+
+\subsubsection{L'explosion calculatoire des hautes dimensions (6D et 12D)}
+À l'inverse, si l'on augmente la dimension à $d=12$, la taille de la requête devient insignifiante ($6$ Ko). Cependant, le temps serveur explose, dépassant les $21$ minutes ($1309.51$ s). Ce phénomène s'explique par le mécanisme de \textit{splitting}. À chaque nouvelle dimension, le serveur doit effectuer des divisions euclidiennes coûteuses sur des grands nombres chiffrés. De plus, la taille de la réponse du serveur grandit de façon exponentielle ($2^{d-1}$ chiffrés). En 12D, le client reçoit $2048$ chiffrés à déchiffrer récursivement, ce qui explique le temps de déchiffrement client qui bondit à $137.59$ s.
+
+\subsubsection{L'optimum multidimensionnel : Le "Sweet Spot" (2D et 3D)}
+Les dimensions $2$ et $3$ représentent le compromis idéal entre calcul et communication :
+\begin{itemize}
+    \item \textbf{Le PIR 2D} est l'architecture la plus équilibrée de nos tests. Elle offre le temps de résolution global le plus rapide ($7.76$ s, soit $13$ fois plus rapide que la 1D), tout en divisant la bande passante par $32$.
+    \item \textbf{Le PIR 3D} est une excellente alternative pour les environnements très contraints en réseau. La requête descend à seulement $12$ Ko, avec un temps total ($15.24$ s) qui reste parfaitement interactif.
+\end{itemize}
+
+\subsection{Conclusion de l'expérience}
+Nos résultats démontrent que l'augmentation de la dimension dans un schéma PIR n'est pas une solution absolue, mais un outil d'ajustement. L'optimisation d'un système PIR récursif nécessite de trouver un équilibre délicat pour éviter d'asphyxier la bande passante (faible dimension) ou de surcharger les processeurs avec le splitting homomorphe (haute dimension). Pour une base de données de taille moyenne, la géométrie matricielle (2D) s'impose comme la solution la plus viable.
+
+
+\section{Analyse de complexité}
+
+\subsection{Complexité de communication}
+
+\begin{center}
+
+\begin{tabular}{|c|c|}
+\hline
+Dimension & Communication \\
+\hline
+1D & $O(n)$ \\
+2D & $O(\sqrt{n})$ \\
+3D & $O(\sqrt[3]{n})$ \\
+ND & $O(n^{1/c})$ \\
+\hline
+
+\end{tabular}
+
+\end{center}
+
+\subsection{Complexité de calcul}
+
+Le coût de calcul est principalement supporté par le serveur, qui doit effectuer des exponentiations modulaires sur des données chiffrées.
+
+Ce coût augmente avec la dimension du protocole.
+
+\subsection{Comparaison des différentes dimensions}
+
+Le choix de la dimension du protocole dépend du compromis souhaité entre :
+
+\begin{itemize}
+
+\item le coût de communication entre le client et le serveur,
+
+\item le coût de calcul effectué par le serveur.
+
+\end{itemize}
+
+Dans ce travail, nous implémentons particulièrement le cas tridimensionnel, qui constitue un bon compromis entre efficacité de communication et complexité algorithmique.
 
 \end{document}

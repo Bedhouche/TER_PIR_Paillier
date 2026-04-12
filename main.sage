@@ -1,3 +1,8 @@
+import time
+import math
+from sage.all import *
+
+
 load("src/paillier.sage")
 load("src/NdTrials/serverNd.sage")
 load("src/NdTrials/clientNd.sage")
